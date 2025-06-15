@@ -1,3 +1,4 @@
+//System Libraries
 #include <iostream>
 #include <vector>
 #include <string>
@@ -8,28 +9,23 @@
 
 using namespace std;
 
-// Global Variables
-int totGms = 0;                    // Global variable to track total games played
-const int BSIZE = 10;              // Global constant for board size
-bool dbgMod = false;               // Global debug flag
-
-// Function Prototypes
+// Function Prototypes - Now with board size parameters
 void dispWel();
-void initBrd(char board[][BSIZE]);
-void dispBrd(const char board[][BSIZE], bool hidShp = true);
-bool plcShp(char board[][BSIZE], int row, int col, int size, char dir);
-void plcRnd(char board[][BSIZE]);
-void plcMan(char board[][BSIZE], string plrNm);
-bool isVldP(const char board[][BSIZE], int row, int col, int size, char dir);
-bool mkMove(char board[][BSIZE], char dispB[][BSIZE], int row, int col);
-bool isOver(const char board[][BSIZE]);
-int cntShp(const char board[][BSIZE]);
+void initBrd(vector<vector<char>>& board, int size);
+void dispBrd(const vector<vector<char>>& board, bool hidShp = true);
+bool plcShp(vector<vector<char>>& board, int row, int col, int size, char dir, int brdSize);
+void plcRnd(vector<vector<char>>& board, int brdSize);
+void plcMan(vector<vector<char>>& board, string plrNm, int brdSize);
+bool isVldP(const vector<vector<char>>& board, int row, int col, int size, char dir, int brdSize);
+bool mkMove(vector<vector<char>>& board, vector<vector<char>>& dispB, int row, int col);
+bool isOver(const vector<vector<char>>& board);
+int cntShp(const vector<vector<char>>& board);
 void svStat(int moves, bool won);
 void ldStat();
 bool isHit(char cell);
 bool isMiss(char cell);
 int calcSc(int moves, bool won);
-void dispSt();
+void dispSt(int totGms, int gmCnt);
 void clrScr();
 
 // Function with defaulted arguments
@@ -47,18 +43,18 @@ void swpVal(int& a, int& b);
 
 // Pass by value functions
 int addNum(int a, int b);
-bool vldInp(int input);
+bool vldInp(int input, int boardSize);
 char getRnd();
 
 // Functions returning values
-int getRow();
-int getCol();
+int getRow(int boardSize);
+int getCol(int boardSize);
 string getNm();
 
 // Function returning boolean
 bool askAgn();
-bool isVCrd(int row, int col);
-bool hasShp(const char board[][BSIZE], int row, int col);
+bool isVCrd(int row, int col, int boardSize);
+bool hasShp(const vector<vector<char>>& board, int row, int col);
 
 // Single dimensioned array functions
 void initSc(int scores[], int size);
@@ -69,9 +65,9 @@ int findMx(const int scores[], int size);
 void dispPs(const string names[], const int scores[], int size);
 void sortPs(string names[], int scores[], int size);
 
-// 2D array functions
-void cpyBrd(const char src[][BSIZE], char dest[][BSIZE]);
-bool cmpBrd(const char brd1[][BSIZE], const char brd2[][BSIZE]);
+// 2D array functions (now using vectors but keeping same concepts)
+void cpyBrd(const vector<vector<char>>& src, vector<vector<char>>& dest);
+bool cmpBrd(const vector<vector<char>>& brd1, const vector<vector<char>>& brd2);
 
 // STL Vector functions
 void addHst(vector<string>& hist, const string& move);
@@ -85,11 +81,15 @@ void selSrt(int arr[], int size);
 int linSch(const int arr[], int size, int tgt);
 int binSch(const int arr[], int size, int tgt);
 
-// Static Variables
-static int gmCnt = 0;              // Static variable to count function calls
-
 int main() {
-    totGms++;                      // Using global variable
+    // Local constants instead of global variables
+    const int BSIZE = 10;              // Local constant for board size
+    bool dbgMod = false;               // Local debug flag
+    int totGms = 1;                    // Local variable to track total games played
+    
+    // Static Variables - demonstrating static concept
+    static int gmCnt = 0;              // Static variable to count function calls
+    gmCnt++;
     
     // Single dimensioned arrays
     int hiSc[5] = {100, 85, 70, 55, 40};
@@ -99,11 +99,11 @@ int main() {
     string plrNms[3] = {"Alice", "Bob", "Charlie"};
     int plrScs[3] = {95, 87, 76};
     
-    // 2D arrays for two players
-    char p1Brd[BSIZE][BSIZE];
-    char p1Dsp[BSIZE][BSIZE];
-    char p2Brd[BSIZE][BSIZE];
-    char p2Dsp[BSIZE][BSIZE];
+    // 2D arrays for two players - now using dynamic vectors
+    vector<vector<char>> p1Brd(BSIZE, vector<char>(BSIZE));
+    vector<vector<char>> p1Dsp(BSIZE, vector<char>(BSIZE));
+    vector<vector<char>> p2Brd(BSIZE, vector<char>(BSIZE));
+    vector<vector<char>> p2Dsp(BSIZE, vector<char>(BSIZE));
     
     // STL Vectors
     vector<string> mvHst;
@@ -118,19 +118,19 @@ int main() {
     cout << "Player 2: " << p2Nm << endl;
     
     // Initialize boards
-    initBrd(p1Brd);
-    initBrd(p1Dsp);
-    initBrd(p2Brd);
-    initBrd(p2Dsp);
+    initBrd(p1Brd, BSIZE);
+    initBrd(p1Dsp, BSIZE);
+    initBrd(p2Brd, BSIZE);
+    initBrd(p2Dsp, BSIZE);
     
     // Player 1 places ships
     cout << "\n" << p1Nm << ", place your ships!" << endl;
-    plcMan(p1Brd, p1Nm);
+    plcMan(p1Brd, p1Nm, BSIZE);
     clrScr();
     
     // Player 2 places ships
     cout << "\n" << p2Nm << ", place your ships!" << endl;
-    plcMan(p2Brd, p2Nm);
+    plcMan(p2Brd, p2Nm, BSIZE);
     clrScr();
     
     int mvCnt = 0;
@@ -150,7 +150,7 @@ int main() {
     cout << "Pass by reference - Counter after increment: " << cnt << endl;
     
     // Function returning boolean
-    bool vldCrd = isVCrd(5, 5);
+    bool vldCrd = isVCrd(5, 5, BSIZE);
     cout << "Boolean return - Is (5,5) valid?: " << (vldCrd ? "Yes" : "No") << endl;
     
     // Defaulted arguments
@@ -217,17 +217,17 @@ int main() {
     // Main game loop for two players
     while(gmActv) {
         string curPlr = p1Turn ? p1Nm : p2Nm;
-        char (*tgtBrd)[BSIZE] = p1Turn ? p2Brd : p1Brd;
-        char (*dspBrd)[BSIZE] = p1Turn ? p2Dsp : p1Dsp;
+        vector<vector<char>>& tgtBrd = p1Turn ? p2Brd : p1Brd;
+        vector<vector<char>>& dspBrd = p1Turn ? p2Dsp : p1Dsp;
         
         cout << "\n" << curPlr << "'s turn!" << endl;
         cout << "Enemy board:" << endl;
         dispBrd(dspBrd, true);
         
-        int row = getRow();
-        int col = getCol();
+        int row = getRow(BSIZE);
+        int col = getCol(BSIZE);
         
-        if(!isVCrd(row, col)) {
+        if(!isVCrd(row, col, BSIZE)) {
             cout << "Invalid coordinates!" << endl;
             continue;
         }
@@ -263,6 +263,9 @@ int main() {
     }
     
     cout << "\nGame Over! Total moves: " << mvCnt << endl;
+    
+    // Pass local variables to display stats
+    dispSt(totGms, gmCnt);
     
     // Ask to play again
     if(askAgn()) {
@@ -330,8 +333,8 @@ void swpVal(int& a, int& b) {
 }
 
 // More pass by value functions
-bool vldInp(int input) {
-    return input >= 0 && input < BSIZE;
+bool vldInp(int input, int boardSize) {
+    return input >= 0 && input < boardSize;
 }
 
 char getRnd() {
@@ -339,18 +342,28 @@ char getRnd() {
 }
 
 // Function returning boolean
-bool isVCrd(int row, int col) {
-    return (row >= 0 && row < BSIZE && col >= 0 && col < BSIZE);
+bool isVCrd(int row, int col, int boardSize) {
+    return (row >= 0 && row < boardSize && col >= 0 && col < boardSize);
 }
 
 bool askAgn() {
     char choice;
-    cout << "Play again? (y/n): ";
-    cin >> choice;
-    return (choice == 'y' || choice == 'Y');
+    while (true) {
+        cout << "Play again? (y/n): ";
+        cin >> choice;
+        choice = toupper(choice);  // Convert to uppercase
+        
+        if (choice == 'Y') {
+            return true;
+        } else if (choice == 'N') {
+            return false;
+        } else {
+            cout << "Please enter Y or N." << endl;
+        }
+    }
 }
 
-bool hasShp(const char board[][BSIZE], int row, int col) {
+bool hasShp(const vector<vector<char>>& board, int row, int col) {
     return board[row][col] == 'S';
 }
 
@@ -410,25 +423,26 @@ void sortPs(string names[], int scores[], int size) {
     }
 }
 
-// 2D array functions
-void initBrd(char board[][BSIZE]) {
-    for(int i = 0; i < BSIZE; i++) {
-        for(int j = 0; j < BSIZE; j++) {
+// 2D array functions - now using vectors but keeping same concepts
+void initBrd(vector<vector<char>>& board, int size) {
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
             board[i][j] = '~';     // Water
         }
     }
 }
 
-void dispBrd(const char board[][BSIZE], bool hidShp) {
+void dispBrd(const vector<vector<char>>& board, bool hidShp) {
+    int size = board.size();
     cout << "  ";
-    for(int i = 0; i < BSIZE; i++) {
+    for(int i = 0; i < size; i++) {
         cout << i << " ";
     }
     cout << endl;
     
-    for(int i = 0; i < BSIZE; i++) {
+    for(int i = 0; i < size; i++) {
         cout << i << " ";
-        for(int j = 0; j < BSIZE; j++) {
+        for(int j = 0; j < size; j++) {
             if(hidShp && board[i][j] == 'S') {
                 cout << "~ ";      // Hide ships from opponent
             } else {
@@ -439,17 +453,19 @@ void dispBrd(const char board[][BSIZE], bool hidShp) {
     }
 }
 
-void cpyBrd(const char src[][BSIZE], char dest[][BSIZE]) {
-    for(int i = 0; i < BSIZE; i++) {
-        for(int j = 0; j < BSIZE; j++) {
+void cpyBrd(const vector<vector<char>>& src, vector<vector<char>>& dest) {
+    int size = src.size();
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
             dest[i][j] = src[i][j];
         }
     }
 }
 
-bool cmpBrd(const char brd1[][BSIZE], const char brd2[][BSIZE]) {
-    for(int i = 0; i < BSIZE; i++) {
-        for(int j = 0; j < BSIZE; j++) {
+bool cmpBrd(const vector<vector<char>>& brd1, const vector<vector<char>>& brd2) {
+    int size = brd1.size();
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
             if(brd1[i][j] != brd2[i][j]) return false;
         }
     }
@@ -527,15 +543,15 @@ int binSch(const int arr[], int size, int tgt) {
     return -1;
 }
 
-// Game-specific functions
-bool isVldP(const char board[][BSIZE], int row, int col, int size, char dir) {
+// Game-specific functions - updated to use vectors and pass boardSize
+bool isVldP(const vector<vector<char>>& board, int row, int col, int size, char dir, int brdSize) {
     if(dir == 'H') {
-        if(col + size > BSIZE) return false;
+        if(col + size > brdSize) return false;
         for(int i = 0; i < size; i++) {
             if(board[row][col + i] != '~') return false;
         }
     } else {
-        if(row + size > BSIZE) return false;
+        if(row + size > brdSize) return false;
         for(int i = 0; i < size; i++) {
             if(board[row + i][col] != '~') return false;
         }
@@ -543,8 +559,8 @@ bool isVldP(const char board[][BSIZE], int row, int col, int size, char dir) {
     return true;
 }
 
-bool plcShp(char board[][BSIZE], int row, int col, int size, char dir) {
-    if(!isVldP(board, row, col, size, dir)) return false;
+bool plcShp(vector<vector<char>>& board, int row, int col, int size, char dir, int brdSize) {
+    if(!isVldP(board, row, col, size, dir, brdSize)) return false;
     
     if(dir == 'H') {
         for(int i = 0; i < size; i++) {
@@ -558,21 +574,21 @@ bool plcShp(char board[][BSIZE], int row, int col, int size, char dir) {
     return true;
 }
 
-void plcRnd(char board[][BSIZE]) {
+void plcRnd(vector<vector<char>>& board, int brdSize) {
     int shpSz[] = {5, 4, 3, 3, 2};  // Single dimensioned array
     
     for(int i = 0; i < 5; i++) {
         bool placed = false;
         while(!placed) {
-            int row = rand() % BSIZE;
-            int col = rand() % BSIZE;
+            int row = rand() % brdSize;
+            int col = rand() % brdSize;
             char dir = (rand() % 2 == 0) ? 'H' : 'V';
-            placed = plcShp(board, row, col, shpSz[i], dir);
+            placed = plcShp(board, row, col, shpSz[i], dir, brdSize);
         }
     }
 }
 
-void plcMan(char board[][BSIZE], string plrNm) {
+void plcMan(vector<vector<char>>& board, string plrNm, int brdSize) {
     string shpNms[] = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
     int shpSz[] = {5, 4, 3, 3, 2};
     
@@ -585,15 +601,15 @@ void plcMan(char board[][BSIZE], string plrNm) {
             int row, col;
             char dir;
             
-            cout << "Enter starting row (0-9): ";
+            cout << "Enter starting row (0-" << (brdSize-1) << "): ";
             cin >> row;
-            cout << "Enter starting column (0-9): ";
+            cout << "Enter starting column (0-" << (brdSize-1) << "): ";
             cin >> col;
             cout << "Enter direction (H for horizontal, V for vertical): ";
             cin >> dir;
             
-            if(isVCrd(row, col) && (dir == 'H' || dir == 'V')) {
-                placed = plcShp(board, row, col, shpSz[i], dir);
+            if(isVCrd(row, col, brdSize) && (dir == 'H' || dir == 'V')) {
+                placed = plcShp(board, row, col, shpSz[i], dir, brdSize);
                 if(!placed) {
                     cout << "Invalid placement! Try again." << endl;
                 }
@@ -610,7 +626,7 @@ void plcMan(char board[][BSIZE], string plrNm) {
     cin.get();
 }
 
-bool mkMove(char board[][BSIZE], char dispB[][BSIZE], int row, int col) {
+bool mkMove(vector<vector<char>>& board, vector<vector<char>>& dispB, int row, int col) {
     if(board[row][col] == 'S') {
         board[row][col] = 'X';     // Hit
         dispB[row][col] = 'X';
@@ -622,35 +638,37 @@ bool mkMove(char board[][BSIZE], char dispB[][BSIZE], int row, int col) {
     return false;
 }
 
-bool isOver(const char board[][BSIZE]) {
-    for(int i = 0; i < BSIZE; i++) {
-        for(int j = 0; j < BSIZE; j++) {
+bool isOver(const vector<vector<char>>& board) {
+    int size = board.size();
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
             if(board[i][j] == 'S') return false;
         }
     }
     return true;
 }
 
-int cntShp(const char board[][BSIZE]) {
+int cntShp(const vector<vector<char>>& board) {
     int count = 0;
-    for(int i = 0; i < BSIZE; i++) {
-        for(int j = 0; j < BSIZE; j++) {
+    int size = board.size();
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
             if(board[i][j] == 'S') count++;
         }
     }
     return count;
 }
 
-int getRow() {
+int getRow(int boardSize) {
     int row;
-    cout << "Enter row (0-9): ";
+    cout << "Enter row (0-" << (boardSize-1) << "): ";
     cin >> row;
     return row;
 }
 
-int getCol() {
+int getCol(int boardSize) {
     int col;
-    cout << "Enter column (0-9): ";
+    cout << "Enter column (0-" << (boardSize-1) << "): ";
     cin >> col;
     return col;
 }
@@ -668,7 +686,7 @@ void dispWel() {
     cout << "================================" << endl;
 }
 
-// Additional missing functions
+// Additional missing functions - updated to accept parameters
 void svStat(int moves, bool won) {
     ofstream file("stats.txt", ios::app);
     if(file.is_open()) {
@@ -693,7 +711,7 @@ int calcSc(int moves, bool won) {
     return baseSc - moves;
 }
 
-void dispSt() {
+void dispSt(int totGms, int gmCnt) {
     cout << "Total games played: " << totGms << endl;
     cout << "Game counter: " << gmCnt << endl;
 }
